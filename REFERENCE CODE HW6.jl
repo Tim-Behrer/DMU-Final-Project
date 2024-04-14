@@ -68,6 +68,10 @@ function LaserTagPOMDP(;size=(10, 7), n_obstacles=9, rng::AbstractRNG=Random.Mer
     LaserTagPOMDP(size, obstacles, blocked, robot_init, obsindices)
 end
 
+################################
+## Stopping Point TODO TODO TODO
+################################
+
 Random.rand(rng::AbstractRNG, ::Random.SamplerType{LaserTagPOMDP}) = LaserTagPOMDP(rng=rng)
 
 POMDPs.actions(m::LaserTagPOMDP) = (:left, :right, :up, :down, :measure)
