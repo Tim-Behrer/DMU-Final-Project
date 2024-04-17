@@ -68,9 +68,6 @@ function LaserTagPOMDP(;size=(10, 7), n_obstacles=9, rng::AbstractRNG=Random.Mer
     LaserTagPOMDP(size, obstacles, blocked, robot_init, obsindices)
 end
 
-################################
-## Stopping Point TODO TODO TODO
-################################
 
 Random.rand(rng::AbstractRNG, ::Random.SamplerType{LaserTagPOMDP}) = LaserTagPOMDP(rng=rng)
 
@@ -112,6 +109,7 @@ function POMDPs.transition(m::LaserTagPOMDP, s, a)
 
     targets = [s.target]
     targetprobs = Float64[0.0]
+
     if sum(abs, newrobot - s.target) > 2 # move randomly
         for change in (SVector(-1,0), SVector(1,0), SVector(0,1), SVector(0,-1))
             newtarget = bounce(m, s.target, change)
@@ -157,6 +155,10 @@ function POMDPs.transition(m::LaserTagPOMDP, s, a)
 end
 
 POMDPs.isterminal(m::LaserTagPOMDP, s) = s.target == s.robot
+
+################################
+## Stopping Point TODO TODO TODO
+################################
 
 function POMDPs.observation(m::LaserTagPOMDP, a, sp)
     left = sp.robot[1]-1
