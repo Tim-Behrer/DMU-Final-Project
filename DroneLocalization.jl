@@ -204,7 +204,11 @@ function POMDPs.observation(m::DronePOMDP, a, sp)
     down = m.size[3]-sp.drone[3]
     ranges = SVector(forward, backward, left, right, up, down)
     for obstacle in m.obstacles
-        ranges = 
+        ranges = 6969696 ##TODO - IN PROGRESS
+    end
+end
+
+## TODO - MAKE THIS WORK FOR THE OBSERVATION QUALITIES
 function lidarbounce(ranges,drone,obstacle)
     forward, backward, left, right, up, down = ranges
     diff = obstacle - drone
@@ -224,11 +228,6 @@ function lidarbounce(ranges,drone,obstacle)
     return SVector(forward, backward, left, right, up, down)
 end
 
-
-
-
-function 
-    
 
 
 
