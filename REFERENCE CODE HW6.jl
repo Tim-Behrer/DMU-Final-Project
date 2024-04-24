@@ -156,10 +156,6 @@ end
 
 POMDPs.isterminal(m::LaserTagPOMDP, s) = s.target == s.robot
 
-################################
-## Stopping Point TODO TODO TODO
-################################
-
 function POMDPs.observation(m::LaserTagPOMDP, a, sp)
     left = sp.robot[1]-1
     right = m.size[1]-sp.robot[1]

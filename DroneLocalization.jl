@@ -1,10 +1,11 @@
+##Easy to call python from julia, good for visualization.
+
 ## Reference: HW6.jl 
 ## Load Modules
 module DroneLocalization
 
 ## Load Required Libraries
 using DMUStudent
-using ..Obfuscatee
 using POMDPs
 using StaticArrays
 using POMDPTools
@@ -13,7 +14,8 @@ using Compose
 using Nettle
 using ProgressMeter
 using JSON
-import LinearAlgebra: SVector
+
+
 
 export 
     DronePOMDP,
@@ -29,7 +31,7 @@ struct DroneState
 end
 
 ## Conversions for the DroneState to make it compatible with the functions
-Base.convert(::Type{Svector{9, Int}}, s::DroneState) = SA[s.drone..., s.target...]
+Base.convert(::Type{SVector{9, Int}}, s::DroneState) = SA[s.drone..., s.target...]
 Base.convert(::Type{AbstractVector{Int}}, s::DroneState) = convert(SVector{9, Int}, s)
 Base.convert(::Type{AbstractVector}, s::DroneState) = convert(SVector{9, Int}, s)
 Base.convert(::Type{AbstractArray}, s::DroneState) = convert(SVector{9, Int}, s)
@@ -213,7 +215,7 @@ function POMDPs.observation(m::DronePOMDP, a, sp)
     if all(ranges.==0.0) || a == :measure
         probs = SVector(1.0, 0.0)
     else
-        probs = SVector(0.1, 0.9) ## TODO Have Sunberg Explain
+        probs = SVector(0.1, 0.9) ## TODO Have Sunberg Explain Probabilities(ranges, NULL)
     end
 
     return SparseCat(os, probs)
@@ -259,13 +261,17 @@ function sensorbounce(ranges,drone,obstacle)
     return SVector(forward, backward, left, right, up, down)
 end
 
-function POMDPs.initialstate(m::DronePOMDPPOMDP)
+function POMDPs.initialstate(m::DronePOMDP)
     return Uniform(DroneState(m.drone_init, SVector(x,y,z), SVector(x,y,z)) for x in 1:m.size[1], y in 1:m.size[2], z in 1:m.size[3])
 end
 
 ## TODO - see if possible better render function 3D
 ## TODO - Have SUNBERG explain this
 ## TODO - This could be improved
+## Easiest to do a 3D plot likely, interactive and rotatable - LOOK INTO THIS
+            # PLOTS.JL
+            # MULTIBODY.JL
+
 function POMDPTools.render(m::DronePOMDP, step)
 
     ############### XY PLANE ################
