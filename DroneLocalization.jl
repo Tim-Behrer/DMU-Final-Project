@@ -124,8 +124,8 @@ function POMDPs.transition(m::DronePOMDP, s, a)
     if isterminal(m,s)
         @assert s.drone == s.target
         # return a new terminal state where the drone has moved
-        # this maintains the property that the drone always moves the same, regardless of the target and wanderer states
-        return SparseCat([LTState(newdrone, newdrone, s.wanderer)], [1.0])
+        # this maintains the property that the drone always moves the same, regardless of the target and bystander states
+        return SparseCat([LTState(newdrone, newdrone, s.bystander)], [1.0])
     end
 
     ## Target transtition Probabilities
@@ -173,7 +173,7 @@ function POMDPs.transition(m::DronePOMDP, s, a)
     states = DroneState[]    
     probs = Float64[]
     for (t, tp) in zip(targets, targetprobs)
-        for (w, wp) in zip(wanderers, wandererprobs)
+        for (w, wp) in zip(bystanders, bystanderprobs)
             push!(states, DroneState(newdrone, t, w))
             push!(probs, tp*wp)
         end
@@ -204,12 +204,22 @@ function POMDPs.observation(m::DronePOMDP, a, sp)
     down = m.size[3]-sp.drone[3]
     ranges = SVector(forward, backward, left, right, up, down)
     for obstacle in m.obstacles
-        ranges = 6969696 ##TODO - IN PROGRESS
+        ranges = sensorbounce(ranges,sp.drone,obstacle)
     end
+    ranges = sensorbounce(ranges,sp.drone,sp.target)
+    ranges = sensorbounce(ranges,sp.drone,sp.bystander)
+
+    os = SVector(ranges, SVector(0, 0, 0, 0, 0, 0))
+    if all(ranges.==0.0) || a == :measure
+        probs = SVector(1.0, 0.0)
+    else
+        probs = SVector(0.1, 0.9) ## TODO Have Sunberg Explain
+    end
+
+    return SparseCat(os, probs)
 end
 
-## TODO - MAKE THIS WORK FOR THE OBSERVATION QUALITIES
-function lidarbounce(ranges,drone,obstacle)
+function sensorbounce(ranges,drone,obstacle)
     forward, backward, left, right, up, down = ranges
     diff = obstacle - drone
     if diff[1] == 0
@@ -218,17 +228,131 @@ function lidarbounce(ranges,drone,obstacle)
         elseif diff[2] < 0
             left = min(left, -diff[2]-1)
         end
+        if diff[3] > 0
+            down = min(down, diff[3]-1)
+        elseif diff[3] < 0
+            up = min(up, -diff[3]-1)
+        end
     elseif diff[2] == 0
         if diff[1] > 0
             forward = min(forward, diff[1]-1)
         elseif diff[1] < 0
             backward = min(backward, -diff[1]-1)
         end
+        if diff[3] > 0
+            down = min(down, diff[3]-1)
+        elseif diff[3] < 0
+            up = min(up, -diff[3]-1)
+        end
+    elseif diff[3] == 0
+        if diff[1] > 0
+            forward = min(forward, diff[1]-1)
+        elseif diff[1] < 0
+            backward = min(backward, -diff[1]-1)
+        end
+        if diff[2] > 0
+            right = min(right, diff[2]-1)
+        elseif diff[2] < 0
+            left = min(left, -diff[2]-1)
+        end    
     end
     return SVector(forward, backward, left, right, up, down)
 end
 
+function POMDPs.initialstate(m::DronePOMDPPOMDP)
+    return Uniform(DroneState(m.drone_init, SVector(x,y,z), SVector(x,y,z)) for x in 1:m.size[1], y in 1:m.size[2], z in 1:m.size[3])
+end
 
+## TODO - see if possible better render function 3D
+## TODO - Have SUNBERG explain this
+## TODO - This could be improved
+function POMDPTools.render(m::DronePOMDP, step)
 
+    ############### XY PLANE ################
+    nx, ny = m.size[1:2]
+    cells = []
+    target_marginal = zeros(nx, ny)
+    bystander_marginal = zeros(nx, ny)
+    if haskey(step, :bp) && !ismissing(step[:bp])
+        for sp in support(step[:bp])
+            p = pdf(step[:bp], sp)
+            target_marginal[sp.target...] += p
+            bystander_marginal[sp.bystander...] += p
+        end
+    end
+
+    for x in 1:nx, y in 1:ny
+        cell = cell_ctx((x,y), m.size[1:2])
+        if SVector(x, y) in m.obstacles
+            compose!(cell, rectangle(), fill("darkgray"))
+        else
+            w_op = sqrt(bystander_marginal[x, y])
+            w_rect = compose(context(), rectangle(), fillopacity(w_op), fill("lightblue"), stroke("gray"))
+            t_op = sqrt(target_marginal[x, y])
+            t_rect = compose(context(), rectangle(), fillopacity(t_op), fill("yellow"), stroke("gray"))
+            compose!(cell, w_rect, t_rect)
+        end
+        push!(cells, cell)
+    end
+    grid = compose(context(), linewidth(0.5mm), cells...)
+    outline = compose(context(), linewidth(1mm), rectangle(), fill("white"), stroke("gray"))
+
+    if haskey(step, :sp)
+        drone_ctx = cell_ctx(step[:sp].drone, m.size[1:2])
+        drone = compose(drone_ctx, circle(0.5, 0.5, 0.5), fill("green"))
+        target_ctx = cell_ctx(step[:sp].target, m.size[1:2])
+        target = compose(target_ctx, circle(0.5, 0.5, 0.5), fill("orange"))
+        bystander_ctx = cell_ctx(step[:sp].bystander, m.size[1:2])
+        bystander = compose(bystander_ctx, circle(0.5, 0.5, 0.5), fill("purple"))
+    else
+        drone = nothing
+        target = nothing
+        bystander = nothing
+    end
+
+    if haskey(step, :o) && haskey(step, :sp)
+        o = step[:o]
+        drone_ctx = cell_ctx(step[:sp].drone, m.size[1:2])
+        left = compose(context(), line([(0.0, 0.5),(-o[1],0.5)]))
+        right = compose(context(), line([(1.0, 0.5),(1.0+o[2],0.5)]))
+        up = compose(context(), line([(0.5, 0.0),(0.5, -o[3])]))
+        down = compose(context(), line([(0.5, 1.0),(0.5, 1.0+o[4])]))
+        lidar = compose(drone_ctx, strokedash([1mm]), stroke("red"), left, right, up, down)
+    else
+        lidar = nothing
+    end
+
+    sz = min(w,h)
+    return compose(context((w-sz)/2, (h-sz)/2, sz, sz), drone, target, bystander, lidar, grid, outline)
+end
+
+function POMDPs.reward(m::DronePOMDP, s, a, sp)
+    if isterminal(m, sp)
+        return 0.0
+    elseif sp.drone == sp.target
+        return 200.0
+    elseif sp.drone == sp.bystander
+        return -50.0
+    elseif a == :measure
+        return -2.0
+    else
+        return -1.0
+    end
+end
+
+function POMDPs.reward(m::DronePOMDP, s, a)
+    r = 0.0
+    td = transition(m, s, a)
+    for (sp, w) in weighted_iterator(td)
+        r += w*reward(m, s, a, sp)
+    end
+    return r    
+end
+
+function cell_ctx(xy, size)
+    nx, ny = size
+    x, y = xy
+    return compose(context((x-1)/nx, (y-1)/ny, 1/nx, 1/ny))
+end
 
 end # module end
