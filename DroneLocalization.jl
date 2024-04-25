@@ -42,22 +42,23 @@ struct DronePOMDP <: POMDP{DroneState, Symbol, SVector{6,Int}}
     size::SVector{3, Int} # x, y, z for the grid
     ## TODO MVP - For now z will always be one but think about introducing a 3D grid
     obstacles::Set{SVector{3, Int}} # x, y, z for the obstacles
-    blocked::BitArray{2}
+    blocked::BitArray{3} #Could make crashes possible (Terminal)
     drone_init::SVector{3, Int}
     obsindices::Array{Union{Nothing,Int}, 6} ##TODO - Figure out what this does/means (TB updated 04/13/2024 - I think this references the observation states)
 end
 
 
-## Define the observation states of the drone flight pomdp
+## Define the observation states of the drone flight pomdp - f,b,l,r,u,d
+## TODO - Check Accuracy TODO
 function droneflight_observations(size)
     os = SVector{6,Int}[]
-    for west in 0:size[1]-1
-        for east in 0:size[1]-west-1
-            for north in 0:size[2]-1
-                for south in 0:size[2]-north-1
+    for south in 0:size[1]-1
+        for north in 0:size[1]-south-1
+            for west in 0:size[2]-1
+                for east in 0:size[2]-west-1
                     for up in 0:size[3]-1
                         for down in 0:size[3]-up-1
-                            push!(os, SVector(east,west,north,south,up,down))
+                            push!(os, SVector(north,south,west,east,up,down))
                         end
                     end
                 end
@@ -124,7 +125,7 @@ function POMDPs.transition(m::DronePOMDP, s, a)
     newdrone = bounce(m, s.drone, actiondir[a])
 
     if isterminal(m,s)
-        @assert s.drone == s.target
+        @assert s.drone == s.target ## TODO - x,y == x',y', but z!=z'
         # return a new terminal state where the drone has moved
         # this maintains the property that the drone always moves the same, regardless of the target and bystander states
         return SparseCat([LTState(newdrone, newdrone, s.bystander)], [1.0])
@@ -136,7 +137,7 @@ function POMDPs.transition(m::DronePOMDP, s, a)
     ## Define the random movement of the target TODO - Solidify This
     ##TODO - I feel like we might want this to move randomly in the x and y direction always.
     # move randomly
-    
+    ##TODO make so target cannot move up and down
     for change in (SVector(1,0,0), SVector(-1,0,0), SVector(0,-1,0), SVector(0,1,0), SVector(0,0,1), SVector(0,0,-1))
         newtarget = bounce(m, s.target, change)
         if newtarget == s.target
@@ -146,19 +147,9 @@ function POMDPs.transition(m::DronePOMDP, s, a)
             push!(targetprobs, Float64(1/6))
         end
     end
-    
-    ##This aspect is probably not necessary
-    # else # move away 
-    #     away = sign.(s.target - s.drone)
-    #     if sum(abs, away) == 2 # diagonal
-    #         away = away - SVector(0, away[2]) # preference to move in x direction
-    #     end
-    #     newtarget = bounce(m, s.target, away)
-    #     targets[1] = newtarget
-    #     targetprobs[1] = 1.0
-    # end
 
     ## Bystander Transition Probabilities
+    ##TODO make so bystanders cannot move up and down
     bystanders = [s.bystander]
     bystanderprobs = Float64[0.0]
     for change in (SVector(1,0,0), SVector(-1,0,0), SVector(0,-1,0), SVector(0,1,0), SVector(0,0,1), SVector(0,0,-1))
@@ -271,6 +262,8 @@ end
 ## Easiest to do a 3D plot likely, interactive and rotatable - LOOK INTO THIS
             # PLOTS.JL
             # MULTIBODY.JL
+            # MESHES.jl - GLMakie instead of Makie
+
 
 function POMDPTools.render(m::DronePOMDP, step)
 

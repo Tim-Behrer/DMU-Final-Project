@@ -1,7 +1,7 @@
 using POMDPs
 using POMDPTools: transition_matrices, reward_vectors, SparseCat, Deterministic, RolloutSimulator, DiscreteBelief, FunctionPolicy, ordered_states, ordered_actions, DiscreteUpdater
 using QuickPOMDPs: QuickPOMDP
-using POMDPModels: TigerPOMDP, TIGER_LEFT, TIGER_RIGHT, TIGER_LISTEN, TIGER_OPEN_LEFT, TIGER_OPEN_RIGHT
+using POMDPModels
 using NativeSARSOP: SARSOPSolver
 using POMDPTesting: has_consistent_distributions
 using QMDP
@@ -10,7 +10,9 @@ using Plots
 using Statistics: mean, std
 using POMCPOW
 using DiscreteValueIteration
-using .DroneLocalization: DronePOMDP
+include("DroneLocalization.jl")
+import .DroneLocalization: DronePOMDP, DroneState, DroneAction, DroneObservation, DroneTransition, DroneReward, DroneDistribution
+
 
 ######################
 # Drone Localization Solution With POMDP Methods
