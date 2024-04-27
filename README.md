@@ -6,4 +6,6 @@ https://www.overleaf.com/3198248937qvgbyzwzvzqw#e62b1c
 
 # References
 - The Use of POMDPS to navigate cluttered and environmentally uncertain environments: https://www.mdpi.com/1424-8220/16/5/666
+- The Use of POMDPS to support localization in GPS denied environments: https://ieeexplore.ieee.org/abstract/document/8741612
+- Drone-Based Autonomous Motion Planning System for Outdoor Environments under Object Detection Uncertainty: https://www.mdpi.com/2072-4292/13/21/4481
 - 
