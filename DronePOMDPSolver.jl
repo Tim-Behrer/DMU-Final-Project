@@ -91,20 +91,21 @@ end
 
 # Define the POMDP Environment
 m = DronePOMDP()
-
+@show("Environment Created")
 ## Define the updater ##
 # Z(m::POMDP, a, sp, o) = pdf(observation(m, a, sp), o)
 # T(m::POMDP, s, a, sp) = pdf(transition(m, s, a), sp)
 up = DiscreteUpdater(m)
-
+@show("Updater Defined")
 ############################# QMDP Solver #############################
-qmdp_p = qmdp_solve(m)
-
+# qmdp_p = qmdp_solve(m)
+# @shwo("Solved")
 QMDP_solver = QMDPSolver(max_iterations=100, belres=1e-6, verbose=false)
 QMDP_SOLUTION = solve(QMDP_solver, m)
+@show("Solved")
 
 qmdp_rolled = [simulate(RolloutSimulator(max_steps=100), m, qmdp_p, up) for _ in 1:500]
-
+@show("Rolled")
 ############################# SARSOP Solver #############################
 
 
