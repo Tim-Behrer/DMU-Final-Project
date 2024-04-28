@@ -100,10 +100,10 @@ up = DiscreteUpdater(m)
 ############################# QMDP Solver #############################
 qmdp_p = qmdp_solve(m)
 
-QMDP_solver = QMDPSolver(max_iterations=200, belres=1e-6, verbose=false)
+QMDP_solver = QMDPSolver(max_iterations=100, belres=1e-6, verbose=false)
 QMDP_SOLUTION = solve(QMDP_solver, m)
 
-qmdp_rolled = [simulate(RolloutSimulator(max_steps=500), m, qmdp_p, up) for _ in 1:5000]
+qmdp_rolled = [simulate(RolloutSimulator(max_steps=100), m, qmdp_p, up) for _ in 1:500]
 
 ############################# SARSOP Solver #############################
 
