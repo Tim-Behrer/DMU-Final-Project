@@ -128,7 +128,7 @@ function POMDPs.transition(m::DronePOMDP, s, a)
         @assert s.drone == s.target ## TODO - x,y == x',y', but z!=z'
         # return a new terminal state where the drone has moved
         # this maintains the property that the drone always moves the same, regardless of the target and bystander states
-        return SparseCat([LTState(newdrone, newdrone, s.bystander)], [1.0])
+        return SparseCat([DroneState(newdrone, newdrone, s.bystander)], [1.0])
     end
 
     ## Target transtition Probabilities
