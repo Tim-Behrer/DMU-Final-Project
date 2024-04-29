@@ -99,15 +99,28 @@ up = DiscreteUpdater(m)
 @show("Updater Defined")
 ############################# QMDP Solver #############################
 # qmdp_p = qmdp_solve(m)
-# @shwo("Solved")
+# @show("Solved")
 QMDP_solver = QMDPSolver(max_iterations=100, belres=1e-6, verbose=false)
 QMDP_SOLUTION = solve(QMDP_solver, m)
 @show("Solved")
 
-qmdp_rolled = [simulate(RolloutSimulator(max_steps=100), m, qmdp_p, up) for _ in 1:500]
+qmdp_rolled = [simulate(RolloutSimulator(max_steps=100), m, QMDP_SOLUTION, up) for _ in 1:500]
 @show("Rolled")
 ############################# SARSOP Solver #############################
 
+
+
+############################# POMCPOW Solution #############################
+@show("POMCPOW Solver")
+function pomcpow_solve(m)
+    solver = POMCPOWSolver(tree_queries=200, 
+                            criterion = MaxUCB(30.0), 
+                            default_action=last(actions(m)), 
+                            estimate_value=FORollout(SparseValueIterationSolver(max_iterations = 1500)))
+    return solve(solver, m)
+end
+pomcpow_p = pomcpow_solve(m)
+pomcpow_rolled = [simulate(RolloutSimulator(max_steps=100), m, pomcpow_p, up) for _ in 1:100]
 
 ############################# Result Plotting #############################
 p2 = plot(QMDP_SOLUTION.alphas,xlabel = "Belief", ylabel = "Value", title = "QMDP Solution Alpha Vectors", label=["α_1" "α_2" "α_3"])
