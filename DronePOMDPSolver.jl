@@ -114,6 +114,9 @@ qq = 500
 # qq = 1
 qmdp_rolled = [simulate(RolloutSimulator(max_steps=1000), m, QMDP_SOLUTION, up) for _ in 1:qq]
 println("Rolled")
+
+println("Mean:", mean(qmdp_rolled))
+println("STD:", std(qmdp_rolled))
 ############################# Trajectory Saver #############################
 
 
@@ -141,23 +144,39 @@ println("Simulation completed and trajectory saved")
 reward_plot = plot(reward_trajectory, xlabel = "Step #", ylabel = "Reward", title = "Reward Trajectory")
 @show(reward_plot)
 ############################# SARSOP Solver #############################
-
-
-
+sarsop_solver = SARSOPSolver(max_iterations=100, tolerance=1e-6, verbose=false)
+sarsop_solution = solve(sarsop_solver, m)
+println("Solved.")
+sarsop_rolled = [simulate(RolloutSimulator(max_steps=100), m, sarsop_solution, up) for _ in 1:100]
+println("Rolled.")
+println("Mean:", mean(sarsop_rolled))
+println("STD:", std(sarsop_rolled))
 ############################# POMCPOW Solution #############################
-# println("POMCPOW Solver")
-# function pomcpow_solve(m)
-#     solver = POMCPOWSolver(tree_queries=200, 
-#                             criterion = MaxUCB(30.0), 
-#                             default_action=last(actions(m)), 
-#                             estimate_value=FORollout(SparseValueIterationSolver(max_iterations = 1500)))
-#     return solve(solver, m)
-# end
-# pomcpow_p = pomcpow_solve(m)
-# pomcpow_rolled = [simulate(RolloutSimulator(max_steps=100), m, pomcpow_p, up) for _ in 1:100]
-
+println("POMCPOW Solver")
+function pomcpow_solve(m)
+    solver = POMCPOWSolver(tree_queries=200, 
+                            criterion = MaxUCB(30.0), 
+                            default_action=last(actions(m)), 
+                            estimate_value=FORollout(SparseValueIterationSolver(max_iterations = 1500)))
+    return solve(solver, m)
+end
+pomcpow_p = pomcpow_solve(m)
+println("Solved.")
+pomcpow_rolled = [simulate(RolloutSimulator(max_steps=100), m, pomcpow_p, up) for _ in 1:100]
+println("Rolled.")
+println("Mean:", mean(pomcpow_rolled))
+println("STD:", std(pomcpow_rolled))
 ############################# Result Plotting #############################
-p2 = plot(QMDP_SOLUTION.alphas,xlabel = "Belief", ylabel = "Value", title = "QMDP Solution Alpha Vectors", label=["α_1" "α_2" "α_3"])
+p2 = plot(QMDP_SOLUTION.alphas,xlabel = "Belief", ylabel = "Value", title = "QMDP Solution Alpha Vectors", label=["α_1" "α_2" "α_3"]) ## TODO Fix this bruddah
+
+##Rollout plots
+# Create three plots
+qmdp_rolled_plot = plot(qmdp_rolled, xlabel = "Rollout Iteration #", ylabel = "Reward", title = "Rollout Trajectory")
+sarsop_rolled_plot = plot(sarsop_rolled, xlabel = "Rollout Iteration #", ylabel = "Reward", title = "Rollout Trajectory")
+pomcpow_rolled_plot = plot(pomcpow_rolled, xlabel = "Rollout Iteration #", ylabel = "Reward", title = "Rollout Trajectory")
+
+# Combine these plots into a 1x3 layout
+plot(qmdp_rolled_plot,sarsop_rolled_plot,pomcpow_rolled_plot, layout = (1, 3))
 
 # ----------------
 # Visualization
