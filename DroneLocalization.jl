@@ -280,6 +280,7 @@ end
             # MESHES.jl - GLMakie instead of Makie
 
 
+## TODO implement makie 3d plot and layout
 function POMDPTools.render(m::DronePOMDP, step)
 
     ############### XY PLANE ################
