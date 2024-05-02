@@ -11,7 +11,9 @@ using Statistics: mean, std
 using POMCPOW
 using DiscreteValueIteration
 include("DroneLocalization.jl")
+# include("twoDDroneLocalization.jl")
 import .DroneLocalization: DronePOMDP, DroneState
+# import .twoDDroneLocalization: twoDDronePOMDP, twoDDroneState
 
 
 ######################
@@ -91,27 +93,61 @@ end
 
 # Define the POMDP Environment
 m = DronePOMDP()
-@show("Environment Created")
+# m2 = twoDDronePOMDP()
+println("Environment Created")
 ## Define the updater ##
 # Z(m::POMDP, a, sp, o) = pdf(observation(m, a, sp), o)
 # T(m::POMDP, s, a, sp) = pdf(transition(m, s, a), sp)
 up = DiscreteUpdater(m)
-@show("Updater Defined")
+# up2 = DiscreteUpdater(m2)
+println("Updater Defined")
 ############################# QMDP Solver #############################
 # qmdp_p = qmdp_solve(m)
-# @show("Solved")
-QMDP_solver = QMDPSolver(max_iterations=1000, belres=1e-6, verbose=false)
+# println("Solved")
+QMDP_solver = QMDPSolver(max_iterations=10, belres=1e-6, verbose=false)
 QMDP_SOLUTION = solve(QMDP_solver, m)
-@show("Solved")
 
-# qmdp_rolled = [simulate(RolloutSimulator(max_steps=1000), m, QMDP_SOLUTION, up) for _ in 1:500]
-# @show("Rolled")
+# twoDQMDP_SOLUTION = solve(QMDP_solver, m2)
+println("Solved")
+
+# qq = 500
+# qq = 1
+# qmdp_rolled = [simulate(RolloutSimulator(max_steps=1000), m, QMDP_SOLUTION, up) for _ in 1:qq]
+# println("Rolled")
+############################# Trajectory Saver #############################
+using POMDPSimulators
+using POMDPTools: stepthrough
+
+# Initialize lists to store the trajectory and rewards
+state_trajectory = []
+action_trajectory = []
+reward_trajectory = []
+
+# Run the simulation
+history = stepthrough(m, QMDP_SOLUTION, up, "s,a,r,sp,o", max_steps=1000)
+
+# Record the trajectory and rewards
+for step in history
+    push!(state_trajectory, step.s)
+    push!(action_trajectory, step.a)
+    push!(reward_trajectory, step.r)
+    push!(reward_trajectory, step.o)
+end
+
+println("Simulation completed and trajectory saved")
+println("State Trajectory: ", state_trajectory)
+println("Action Trajectory: ", action_trajectory)
+println("Reward Trajectory: ", reward_trajectory)
+
+# ## Plotting the trajectory
+reward_plot = plot(reward_trajectory, xlabel = "Step #", ylabel = "Reward", title = "Reward Trajectory")
+@show(reward_plot)
 ############################# SARSOP Solver #############################
 
 
 
 ############################# POMCPOW Solution #############################
-# @show("POMCPOW Solver")
+# println("POMCPOW Solver")
 # function pomcpow_solve(m)
 #     solver = POMCPOWSolver(tree_queries=200, 
 #                             criterion = MaxUCB(30.0), 
@@ -133,17 +169,17 @@ p2 = plot(QMDP_SOLUTION.alphas,xlabel = "Belief", ylabel = "Value", title = "QMD
 # You can make a gif showing what's going on like this:
 using POMDPGifs
 import Cairo, Fontconfig # needed to display properly
+## TODO - See what happenes when max_steps is increased
+makegif(m, QMDP_SOLUTION, up, max_steps=50, filename="localization.gif")
 
-makegif(m, QMDP_SOLUTION, up, max_steps=30, filename="localization.gif")
+# # You can render a single frame like this
+# using POMDPTools: stepthrough, render
+# using Compose: draw, PNG
 
-# You can render a single frame like this
-using POMDPTools: stepthrough, render
-using Compose: draw, PNG
-
-history = []
-for step in stepthrough(m, pomcpow_p, up, max_steps=10)
-    push!(history, step)
-end
-displayable_object = render(m, last(history))
-# display(displayable_object) # <-this will work in a jupyter notebook or if you have vs code or ElectronDisplay
-draw(PNG("localization.png"), displayable_object)
+# history = []
+# for step in stepthrough(m, pomcpow_p, up, max_steps=10)
+#     push!(history, step)
+# end
+# displayable_object = render(m, last(history))
+# # display(displayable_object) # <-this will work in a jupyter notebook or if you have vs code or ElectronDisplay
+# draw(PNG("localization.png"), displayable_object)

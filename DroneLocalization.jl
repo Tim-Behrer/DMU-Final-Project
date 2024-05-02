@@ -68,7 +68,8 @@ function droneflight_observations(size)
     return os
 end
 
-## Define the Drone POMDP
+## Define the Drone POMDP TODO - needs to be fixed once the state is propagated to 3D obstacles 
+## TODO - think about making tthe obstacles constant
 function DronePOMDP(;size=(10, 10, 1), n_obstacles=15, rng::AbstractRNG=Random.MersenneTwister(69)) ##TODO - Hash out these values
     obstacles = Set{SVector{3, Int}}()
     blocked = falses(size...)
@@ -196,6 +197,8 @@ function POMDPs.observation(m::DronePOMDP, a, sp)
     up = sp.drone[3]-1
     down = m.size[3]-sp.drone[3]
     ranges = SVector(forward, backward, left, right, up, down)
+     # Log the observations
+     println("Observations: Forward: $forward, Backward: $backward, Left: $left, Right: $right")
     for obstacle in m.obstacles
         ranges = sensorbounce(ranges,sp.drone,obstacle)
     end
@@ -215,40 +218,52 @@ end
 function sensorbounce(ranges,drone,obstacle)
     forward, backward, left, right, up, down = ranges
     diff = obstacle - drone
-    if diff[1] == 0
-        if diff[2] > 0
-            right = min(right, diff[2]-1)
-        elseif diff[2] < 0
-            left = min(left, -diff[2]-1)
+    if diff[3] == 0
+        if diff[1] == 0
+            if diff[2] > 0
+                right = min(right, diff[2]-1)
+            elseif diff[2] < 0
+                left = min(left, -diff[2]-1)
+            end
+        elseif diff[2] == 0
+            if diff[1] > 0
+                forward = min(forward, diff[1]-1)
+            elseif diff[1] < 0
+                backward = min(backward, -diff[1]-1)
+            end
         end
-        if diff[3] > 0
-            down = min(down, diff[3]-1)
-        elseif diff[3] < 0
-            up = min(up, -diff[3]-1)
+        
+        ##TODO - VERIFY BELOW THIS POINT FOR 3D TODO TODO 
+    elseif diff[1] == 0
+        if diff[2] == 0
+            if diff[3] > 0
+                down = min(down, diff[3]-1)
+            elseif diff[3] < 0
+                up = min(up, -diff[3]-1)
+            end
+        elseif diff[3] == 0
+            if diff[2] > 0
+                right = min(right, diff[2]-1)
+            elseif diff[2] < 0
+                left = min(left, -diff[2]-1)
+            end
         end
     elseif diff[2] == 0
-        if diff[1] > 0
-            forward = min(forward, diff[1]-1)
-        elseif diff[1] < 0
-            backward = min(backward, -diff[1]-1)
+        if diff[3] == 0
+            if diff[1] > 0
+                forward = min(forward, diff[1]-1)
+            elseif diff[1] < 0
+                backward = min(backward, -diff[1]-1)
+            end
+        elseif diff[1] == 0
+            if diff[3] > 0
+                down = min(down, diff[3]-1)
+            elseif diff[3] < 0
+                up = min(up, -diff[3]-1)
+            end
         end
-        if diff[3] > 0
-            down = min(down, diff[3]-1)
-        elseif diff[3] < 0
-            up = min(up, -diff[3]-1)
-        end
-    elseif diff[3] == 0
-        if diff[1] > 0
-            forward = min(forward, diff[1]-1)
-        elseif diff[1] < 0
-            backward = min(backward, -diff[1]-1)
-        end
-        if diff[2] > 0
-            right = min(right, diff[2]-1)
-        elseif diff[2] < 0
-            left = min(left, -diff[2]-1)
-        end    
     end
+
     return SVector(forward, backward, left, right, up, down)
 end
 
@@ -282,9 +297,11 @@ function POMDPTools.render(m::DronePOMDP, step)
 
     for x in 1:nx, y in 1:ny
         cell = cell_ctx((x,y), m.size[1:2])
-        if SVector(x, y) in m.obstacles
+        if SVector(x, y, 1) in m.obstacles
             compose!(cell, rectangle(), fill("darkgray"))
+            println("Obstacle")
         else
+            println("lies")
             w_op = sqrt(bystander_marginal[x, y])
             w_rect = compose(context(), rectangle(), fillopacity(w_op), fill("lightblue"), stroke("gray"))
             t_op = sqrt(target_marginal[x, y])
@@ -326,12 +343,12 @@ function POMDPTools.render(m::DronePOMDP, step)
 end
 
 function POMDPs.reward(m::DronePOMDP, s, a, sp)
-    if isterminal(m, sp)
+    if isterminal(m, s)
         return 0.0
     elseif sp.drone == sp.target
         return 200.0
     elseif sp.drone == sp.bystander
-        return -50.0
+        return -5.0
     elseif a == :measure
         return -2.0
     else
