@@ -5,7 +5,7 @@
 module DroneLocalization
 
 ## Load Required Libraries
-using DMUStudent
+# using DMUStudent
 using POMDPs
 using StaticArrays
 using POMDPTools
@@ -21,13 +21,13 @@ export
     DronePOMDP,
     DroneState,
     droneflight
-    ## TODO - EXPORT ANYTHING ELSE THAT NEEDS TO BE EXPORTED
+    ## TODO - EXPORT Anydir_xTHING ELSE THAT NEEDS TO BE EXPORTED
 struct DroneState
     drone::SVector{3, Int} # x, y, z for the drone
     target::SVector{3, Int} # x, y, z for the target
     bystander::SVector{3, Int} # x, y, z for the bystander
     ## TODO - Think about making the ints into float64s
-    ## TODO - Introduce any other state variables that are needed
+    ## TODO - Introduce anydir_x other state variables that are needed
 end
 
 ## Conversions for the DroneState to make it compatible with the functions
@@ -103,7 +103,7 @@ POMDPs.obsindex(m::DronePOMDP, o) = m.obsindices[(o.+1)...]::Int
 
 
 ## Define the actions for the drone
-const actiondir = Dict(:forward=>SVector(1,0,0), :backward=>SVector(-1,0,0), :left=>SVector(0,-1,0), :right=>SVector(0,1,0), :up=>SVector(0,0,1), :down=>SVector(0,0,-1), :measure=>SVector(0,0,0))
+const actiondir = Dict(:forward=>SVector(1,0,0), :backward=>SVector(-1,0,0), :left=>SVector(0,-1,0), :right=>SVector(0,1,0), :up=>SVector(0,0,-1), :down=>SVector(0,0,1), :measure=>SVector(0,0,0))
 const actionind = Dict(:forward=>1, :backward=>2, :left=>3, :right=>4, :up=>5, :down=>6, :measure=>7)
 
 ## Define the behavior function for the drone when it is blocked and not blocked
@@ -284,10 +284,10 @@ end
 function POMDPTools.render(m::DronePOMDP, step)
 
     ############### XY PLANE ################
-    nx, ny = m.size[1:2]
+    nxdir_y, nydir_x = m.size[1:2]
     cells = []
-    target_marginal = zeros(nx, ny)
-    bystander_marginal = zeros(nx, ny)
+    target_marginal = zeros(nydir_x, nxdir_y)
+    bystander_marginal = zeros(nydir_x, nxdir_y)
     if haskey(step, :bp) && !ismissing(step[:bp])
         for sp in support(step[:bp])
             p = pdf(step[:bp], sp)
@@ -296,7 +296,7 @@ function POMDPTools.render(m::DronePOMDP, step)
         end
     end
 
-    for x in 1:nx, y in 1:ny
+    for x in 1:nydir_x, y in 1:nxdir_y
         cell = cell_ctx((x,y), m.size[1:2])
         if SVector(x, y, 1) in m.obstacles
             compose!(cell, rectangle(), fill("darkgray"))
@@ -371,9 +371,9 @@ function POMDPs.reward(m::DronePOMDP, s, a)
 end
 
 function cell_ctx(xy, size)
-    nx, ny = size
+    nydir_x, nxdir_y = size
     x, y = xy
-    return compose(context((x-1)/nx, (y-1)/ny, 1/nx, 1/ny))
+    return compose(context((x-1)/nydir_x, (y-1)/nxdir_y, 1/nydir_x, 1/nxdir_y))
 end
 
 end # module end

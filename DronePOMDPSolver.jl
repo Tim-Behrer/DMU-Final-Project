@@ -1,5 +1,6 @@
 using POMDPs
-using POMDPTools: transition_matrices, reward_vectors, SparseCat, Deterministic, RolloutSimulator, DiscreteBelief, FunctionPolicy, ordered_states, ordered_actions, DiscreteUpdater
+using POMDPTools: stepthrough, transition_matrices, reward_vectors, SparseCat, Deterministic, RolloutSimulator, DiscreteBelief, FunctionPolicy, ordered_states, ordered_actions, DiscreteUpdater
+using POMDPSimulators
 using QuickPOMDPs: QuickPOMDP
 using POMDPModels
 using NativeSARSOP: SARSOPSolver
@@ -14,7 +15,6 @@ include("DroneLocalization.jl")
 # include("twoDDroneLocalization.jl")
 import .DroneLocalization: DronePOMDP, DroneState
 # import .twoDDroneLocalization: twoDDronePOMDP, twoDDroneState
-
 
 ######################
 # Drone Localization Solution With POMDP Methods
@@ -104,19 +104,18 @@ println("Updater Defined")
 ############################# QMDP Solver #############################
 # qmdp_p = qmdp_solve(m)
 # println("Solved")
-QMDP_solver = QMDPSolver(max_iterations=10, belres=1e-6, verbose=false)
+QMDP_solver = QMDPSolver(max_iterations=100, belres=1e-6, verbose=false)
 QMDP_SOLUTION = solve(QMDP_solver, m)
 
 # twoDQMDP_SOLUTION = solve(QMDP_solver, m2)
 println("Solved")
 
-# qq = 500
+qq = 500
 # qq = 1
-# qmdp_rolled = [simulate(RolloutSimulator(max_steps=1000), m, QMDP_SOLUTION, up) for _ in 1:qq]
-# println("Rolled")
+qmdp_rolled = [simulate(RolloutSimulator(max_steps=1000), m, QMDP_SOLUTION, up) for _ in 1:qq]
+println("Rolled")
 ############################# Trajectory Saver #############################
-using POMDPSimulators
-using POMDPTools: stepthrough
+
 
 # Initialize lists to store the trajectory and rewards
 state_trajectory = []
