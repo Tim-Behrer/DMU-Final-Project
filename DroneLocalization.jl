@@ -198,7 +198,7 @@ function POMDPs.observation(m::DronePOMDP, a, sp)
     down = m.size[3]-sp.drone[3]
     ranges = SVector(forward, backward, left, right, up, down)
      # Log the observations
-     println("Observations: Forward: $forward, Backward: $backward, Left: $left, Right: $right, Up: $up, Down: $down")
+    # println("Observations: Forward: $forward, Backward: $backward, Left: $left, Right: $right, Up: $up, Down: $down")
     for obstacle in m.obstacles
         ranges = sensorbounce(ranges,sp.drone,obstacle)
     end
@@ -299,9 +299,7 @@ function POMDPTools.render(m::DronePOMDP, step)
         cell = cell_ctx((x,y), m.size[1:2])
         if SVector(x, y, 1) in m.obstacles
             compose!(cell, rectangle(), fill("darkgray"))
-            println("Obstacle")
         else
-            println("lies")
             w_op = sqrt(bystander_marginal[x, y])
             w_rect = compose(context(), rectangle(), fillopacity(w_op), fill("lightblue"), stroke("gray"))
             t_op = sqrt(target_marginal[x, y])
