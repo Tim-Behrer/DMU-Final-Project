@@ -1,0 +1,4 @@
+name = "DroneLocalization"
+uuid = "3753cb78-03db-49fb-a326-52bbea7e2c1a"
+authors = ["Tim-Behrer <147452551+Tim-Behrer@users.noreply.github.com>"]
+version = "0.1.0"
