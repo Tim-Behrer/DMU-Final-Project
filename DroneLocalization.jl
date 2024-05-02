@@ -52,13 +52,13 @@ end
 ## TODO - Check Accuracy TODO
 function droneflight_observations(size)
     os = SVector{6,Int}[]
-    for south in 0:size[1]-1
-        for north in 0:size[1]-south-1
-            for west in 0:size[2]-1
-                for east in 0:size[2]-west-1
+    for backward in 0:size[1]-1
+        for forward in 0:size[1]-backward-1
+            for left in 0:size[2]-1
+                for right in 0:size[2]-left-1
                     for up in 0:size[3]-1
                         for down in 0:size[3]-up-1
-                            push!(os, SVector(north,south,west,east,up,down))
+                            push!(os, SVector(forward,backward,left,right,up,down))
                         end
                     end
                 end
@@ -280,6 +280,7 @@ end
             # MESHES.jl - GLMakie instead of Makie
 
 
+## TODO implement makie 3d plot and layout
 function POMDPTools.render(m::DronePOMDP, step)
 
     ############### XY PLANE ################
@@ -327,11 +328,17 @@ function POMDPTools.render(m::DronePOMDP, step)
     if haskey(step, :o) && haskey(step, :sp)
         o = step[:o]
         drone_ctx = cell_ctx(step[:sp].drone, m.size[1:2])
-        backward = compose(context(), line([(0.0, 0.5),(-o[1],0.5)]))
-        forward = compose(context(), line([(1.0, 0.5),(1.0+o[2],0.5)]))
-        left = compose(context(), line([(0.5, 0.0),(0.5, -o[3])]))
-        right = compose(context(), line([(0.5, 1.0),(0.5, 1.0+o[4])]))
-        lidar = compose(drone_ctx, strokedash([1mm]), stroke("red"), forward, backward, left, right)
+        # forward = compose(context(), line([(0.0, 0.5),(-o[1],0.5)]))
+        # backward = compose(context(), line([(1.0, 0.5),(1.0+o[2],0.5)]))
+        # left = compose(context(), line([(0.5, 0.0),(0.5, -o[3])]))
+        # right = compose(context(), line([(0.5, 1.0),(0.5, 1.0+o[4])]))
+        # lidar = compose(drone_ctx, strokedash([1mm]), stroke("red"), forward, backward, left, right)
+        forward = compose(context(), line([(0.0, 0.5),(1.0+o[1],0.5)]) , stroke("green"))
+        backward = compose(context(), line([(1.0, 0.5),(-o[2],0.5)]) , stroke("red"))
+        left = compose(context(), line([(0.5, 0.0),(0.5, -o[3])]) , stroke("yellow"))
+        right = compose(context(), line([(0.5, 1.0),(0.5, 1.0+o[4])]) , stroke("blue"))
+        lidar = compose(drone_ctx, strokedash([1mm]), forward, backward, left, right)
+        println("Left: $o[4], right: $o[3]")
     else
         lidar = nothing
     end
