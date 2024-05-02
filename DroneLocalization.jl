@@ -198,7 +198,7 @@ function POMDPs.observation(m::DronePOMDP, a, sp)
     down = m.size[3]-sp.drone[3]
     ranges = SVector(forward, backward, left, right, up, down)
      # Log the observations
-     println("Observations: Forward: $forward, Backward: $backward, Left: $left, Right: $right")
+     println("Observations: Forward: $forward, Backward: $backward, Left: $left, Right: $right, Up: $up, Down: $down")
     for obstacle in m.obstacles
         ranges = sensorbounce(ranges,sp.drone,obstacle)
     end

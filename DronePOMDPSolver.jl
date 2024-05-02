@@ -124,20 +124,19 @@ action_trajectory = []
 reward_trajectory = []
 
 # Run the simulation
-history = stepthrough(m, QMDP_SOLUTION, up, "s,a,r,sp,o", max_steps=1000)
+history = stepthrough(m, QMDP_SOLUTION, up, "s,a,r,sp", max_steps=1000)
 
 # Record the trajectory and rewards
 for step in history
     push!(state_trajectory, step.s)
     push!(action_trajectory, step.a)
     push!(reward_trajectory, step.r)
-    push!(reward_trajectory, step.o)
 end
 
 println("Simulation completed and trajectory saved")
-println("State Trajectory: ", state_trajectory)
-println("Action Trajectory: ", action_trajectory)
-println("Reward Trajectory: ", reward_trajectory)
+# println("State Trajectory: ", state_trajectory)
+# println("Action Trajectory: ", action_trajectory)
+# println("Reward Trajectory: ", reward_trajectory)
 
 # ## Plotting the trajectory
 reward_plot = plot(reward_trajectory, xlabel = "Step #", ylabel = "Reward", title = "Reward Trajectory")
