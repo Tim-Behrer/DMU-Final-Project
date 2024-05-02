@@ -327,11 +327,12 @@ function POMDPTools.render(m::DronePOMDP, step)
     if haskey(step, :o) && haskey(step, :sp)
         o = step[:o]
         drone_ctx = cell_ctx(step[:sp].drone, m.size[1:2])
-        backward = compose(context(), line([(0.0, 0.5),(-o[1],0.5)]))
-        forward = compose(context(), line([(1.0, 0.5),(1.0+o[2],0.5)]))
+        forward = compose(context(), line([(0.0, 0.5),(-o[1],0.5)]))
+        backward = compose(context(), line([(1.0, 0.5),(1.0+o[2],0.5)]))
         left = compose(context(), line([(0.5, 0.0),(0.5, -o[3])]))
         right = compose(context(), line([(0.5, 1.0),(0.5, 1.0+o[4])]))
         lidar = compose(drone_ctx, strokedash([1mm]), stroke("red"), forward, backward, left, right)
+        println("Left: $o[4], right: $o[3]")
     else
         lidar = nothing
     end
