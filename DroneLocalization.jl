@@ -5,7 +5,7 @@
 module DroneLocalization
 
 ## Load Required Libraries
-using DMUStudent
+# using DMUStudent
 using POMDPs
 using StaticArrays
 using POMDPTools
@@ -21,13 +21,13 @@ export
     DronePOMDP,
     DroneState,
     droneflight
-    ## TODO - EXPORT ANYTHING ELSE THAT NEEDS TO BE EXPORTED
+    ## TODO - EXPORT Anydir_xTHING ELSE THAT NEEDS TO BE EXPORTED
 struct DroneState
     drone::SVector{3, Int} # x, y, z for the drone
     target::SVector{3, Int} # x, y, z for the target
     bystander::SVector{3, Int} # x, y, z for the bystander
     ## TODO - Think about making the ints into float64s
-    ## TODO - Introduce any other state variables that are needed
+    ## TODO - Introduce anydir_x other state variables that are needed
 end
 
 ## Conversions for the DroneState to make it compatible with the functions
@@ -52,13 +52,13 @@ end
 ## TODO - Check Accuracy TODO
 function droneflight_observations(size)
     os = SVector{6,Int}[]
-    for south in 0:size[1]-1
-        for north in 0:size[1]-south-1
-            for west in 0:size[2]-1
-                for east in 0:size[2]-west-1
+    for backward in 0:size[1]-1
+        for forward in 0:size[1]-backward-1
+            for left in 0:size[2]-1
+                for right in 0:size[2]-left-1
                     for up in 0:size[3]-1
                         for down in 0:size[3]-up-1
-                            push!(os, SVector(north,south,west,east,up,down))
+                            push!(os, SVector(forward,backward,left,right,up,down))
                         end
                     end
                 end
@@ -103,7 +103,7 @@ POMDPs.obsindex(m::DronePOMDP, o) = m.obsindices[(o.+1)...]::Int
 
 
 ## Define the actions for the drone
-const actiondir = Dict(:forward=>SVector(1,0,0), :backward=>SVector(-1,0,0), :left=>SVector(0,-1,0), :right=>SVector(0,1,0), :up=>SVector(0,0,1), :down=>SVector(0,0,-1), :measure=>SVector(0,0,0))
+const actiondir = Dict(:forward=>SVector(1,0,0), :backward=>SVector(-1,0,0), :left=>SVector(0,-1,0), :right=>SVector(0,1,0), :up=>SVector(0,0,-1), :down=>SVector(0,0,1), :measure=>SVector(0,0,0))
 const actionind = Dict(:forward=>1, :backward=>2, :left=>3, :right=>4, :up=>5, :down=>6, :measure=>7)
 
 ## Define the behavior function for the drone when it is blocked and not blocked
@@ -280,13 +280,14 @@ end
             # MESHES.jl - GLMakie instead of Makie
 
 
+## TODO implement makie 3d plot and layout
 function POMDPTools.render(m::DronePOMDP, step)
 
     ############### XY PLANE ################
-    nx, ny = m.size[1:2]
+    nxdir_y, nydir_x = m.size[1:2]
     cells = []
-    target_marginal = zeros(nx, ny)
-    bystander_marginal = zeros(nx, ny)
+    target_marginal = zeros(nydir_x, nxdir_y)
+    bystander_marginal = zeros(nydir_x, nxdir_y)
     if haskey(step, :bp) && !ismissing(step[:bp])
         for sp in support(step[:bp])
             p = pdf(step[:bp], sp)
@@ -295,7 +296,7 @@ function POMDPTools.render(m::DronePOMDP, step)
         end
     end
 
-    for x in 1:nx, y in 1:ny
+    for x in 1:nydir_x, y in 1:nxdir_y
         cell = cell_ctx((x,y), m.size[1:2])
         if SVector(x, y, 1) in m.obstacles
             compose!(cell, rectangle(), fill("darkgray"))
@@ -327,11 +328,17 @@ function POMDPTools.render(m::DronePOMDP, step)
     if haskey(step, :o) && haskey(step, :sp)
         o = step[:o]
         drone_ctx = cell_ctx(step[:sp].drone, m.size[1:2])
-        backward = compose(context(), line([(0.0, 0.5),(-o[1],0.5)]))
-        forward = compose(context(), line([(1.0, 0.5),(1.0+o[2],0.5)]))
-        left = compose(context(), line([(0.5, 0.0),(0.5, -o[3])]))
-        right = compose(context(), line([(0.5, 1.0),(0.5, 1.0+o[4])]))
-        lidar = compose(drone_ctx, strokedash([1mm]), stroke("red"), forward, backward, left, right)
+        # forward = compose(context(), line([(0.0, 0.5),(-o[1],0.5)]))
+        # backward = compose(context(), line([(1.0, 0.5),(1.0+o[2],0.5)]))
+        # left = compose(context(), line([(0.5, 0.0),(0.5, -o[3])]))
+        # right = compose(context(), line([(0.5, 1.0),(0.5, 1.0+o[4])]))
+        # lidar = compose(drone_ctx, strokedash([1mm]), stroke("red"), forward, backward, left, right)
+        forward = compose(context(), line([(0.0, 0.5),(1.0+o[1],0.5)]) , stroke("green"))
+        backward = compose(context(), line([(1.0, 0.5),(-o[2],0.5)]) , stroke("red"))
+        left = compose(context(), line([(0.5, 0.0),(0.5, -o[3])]) , stroke("yellow"))
+        right = compose(context(), line([(0.5, 1.0),(0.5, 1.0+o[4])]) , stroke("blue"))
+        lidar = compose(drone_ctx, strokedash([1mm]), forward, backward, left, right)
+        println("Left: $o[4], right: $o[3]")
     else
         lidar = nothing
     end
@@ -364,9 +371,9 @@ function POMDPs.reward(m::DronePOMDP, s, a)
 end
 
 function cell_ctx(xy, size)
-    nx, ny = size
+    nydir_x, nxdir_y = size
     x, y = xy
-    return compose(context((x-1)/nx, (y-1)/ny, 1/nx, 1/ny))
+    return compose(context((x-1)/nydir_x, (y-1)/nxdir_y, 1/nydir_x, 1/nxdir_y))
 end
 
 end # module end
