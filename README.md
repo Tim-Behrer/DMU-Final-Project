@@ -15,3 +15,7 @@ https://www.overleaf.com/3198248937qvgbyzwzvzqw#e62b1c
 - https://discourse.julialang.org/t/how-to-create-a-graphic-simulator/94256
 - https://help.juliahub.com/drone/dev/
 - https://docs.makie.org/stable/
+
+# Mackie Layout Tutorial
+- https://docs.makie.org/stable/tutorials/layout-tutorial/
+- 
