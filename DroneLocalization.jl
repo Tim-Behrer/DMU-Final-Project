@@ -70,17 +70,22 @@ end
 
 ## Define the Drone POMDP TODO - needs to be fixed once the state is propagated to 3D obstacles 
 ## TODO - think about making tthe obstacles constant
-function DronePOMDP(;size=(10, 10, 2), n_obstacles=15, rng::AbstractRNG=Random.MersenneTwister(69)) ##TODO - Hash out these values
+function DronePOMDP(;size=(5, 5, 5), n_obstacles=20, rng::AbstractRNG=Random.MersenneTwister(69)) ##TODO - Hash out these values
     obstacles = Set{SVector{3, Int}}()
     blocked = falses(size...)
     while length(obstacles) < n_obstacles
-        obs = SVector(rand(rng, 1:size[1]), rand(rng, 1:size[2]), 1)
-        push!(obstacles, obs)
-        blocked[obs...] = true
+        x = rand(rng, 1:size[1])
+        y = rand(rng, 1:size[2])
+        for z in 1:rand(rng,1:size[3])
+            obs = SVector(x, y, z)
+            println("obstacle: ", obs)
+            push!(obstacles, obs)
+            blocked[obs...] = true
+        end
     end
     drone_init = SVector(rand(rng, 1:size[1]), rand(rng, 1:size[2]), rand(rng, 1:size[3]))
     println("drone: ", drone_init)
-    println("obstacle: ", obstacles)
+    #println("obstacle: ", obstacles)
     obsindices = Array{Union{Nothing,Int}}(nothing, size[1], size[1], size[2], size[2], size[3], size[3]) ##TODO - FIgure out what this does/means (linked to the above TODO) (TB updated 04/13/2024 - I think is correct, but needs to be verified)
     for (ind, o) in enumerate(droneflight_observations(size))
         obsindices[(o.+1)...] = ind
@@ -127,7 +132,9 @@ function POMDPs.transition(m::DronePOMDP, s, a)
     newdrone = bounce(m, s.drone, actiondir[a])
 
     if isterminal(m,s)
-        @assert s.drone == s.target ## TODO - x,y == x',y', but z!=z'
+        #println(s.drone)
+        #println(s.drone[1:2])
+        @assert s.drone[1:2] == s.target[1:2] ## TODO - x,y == x',y', but z!=z'
         # return a new terminal state where the drone has moved
         # this maintains the property that the drone always moves the same, regardless of the target and bystander states
         return SparseCat([DroneState(newdrone, newdrone, s.bystander)], [1.0])
@@ -347,9 +354,13 @@ end
 function POMDPs.reward(m::DronePOMDP, s, a, sp)
     if isterminal(m, s)
         return 0.0
-    elseif sp.drone == sp.target
+    elseif sp.drone[1:2] == sp.target[1:2]
+        #println("drone: ", sp.drone)
+        #println("target: ", sp.target)
         return 200.0
-    elseif sp.drone == sp.bystander
+    elseif sp.drone[1:2] == sp.bystander[1:2]
+        #println("drone: ", sp.drone)
+        #println("bystander: ", sp.bystander)
         return -5.0
     elseif a == :measure
         return -2.0

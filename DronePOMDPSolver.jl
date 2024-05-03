@@ -33,7 +33,7 @@ println("Solved.")
 
 up = DiscreteUpdater(m)
 
-pomcpow_rolled = [simulate(RolloutSimulator(), m, pomcpow_p, up) for _ in 1:100]
+pomcpow_rolled = [simulate(RolloutSimulator(), m, pomcpow_p, up) for _ in 1:50]
 println("Rolled.")
 println("Mean:", mean(pomcpow_rolled))
 println("STD:", std(pomcpow_rolled))
