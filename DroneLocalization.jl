@@ -74,7 +74,7 @@ function DronePOMDP(;size=(10, 10, 2), n_obstacles=15, rng::AbstractRNG=Random.M
     obstacles = Set{SVector{3, Int}}()
     blocked = falses(size...)
     while length(obstacles) < n_obstacles
-        obs = SVector(rand(rng, 1:size[1]), rand(rng, 1:size[2]), rand(rng, 1:size[3]))
+        obs = SVector(rand(rng, 1:size[1]), rand(rng, 1:size[2]), 1)
         push!(obstacles, obs)
         blocked[obs...] = true
     end

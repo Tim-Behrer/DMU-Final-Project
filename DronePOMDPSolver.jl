@@ -33,13 +33,15 @@ println("Solved.")
 
 up = DiscreteUpdater(m)
 
-pomcpow_rolled = [simulate(RolloutSimulator(max_steps=100), m, pomcpow_p, up) for _ in 1:100]
+pomcpow_rolled = [simulate(RolloutSimulator(), m, pomcpow_p, up) for _ in 1:100]
 println("Rolled.")
 println("Mean:", mean(pomcpow_rolled))
 println("STD:", std(pomcpow_rolled))
 
 using POMDPGifs
 import Cairo, Fontconfig
+
+pomcpow_rolled_plot = plot(pomcpow_rolled, xlabel = "Rollout Iteration #", ylabel = "Reward", title = "Rollout Trajectory")
 
 #makegif(m, pomcpow_p, up, filename="localization.gif")
 
