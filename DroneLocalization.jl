@@ -70,7 +70,7 @@ end
 
 ## Define the Drone POMDP TODO - needs to be fixed once the state is propagated to 3D obstacles 
 ## TODO - think about making tthe obstacles constant
-function DronePOMDP(;size=(10, 10, 1), n_obstacles=15, rng::AbstractRNG=Random.MersenneTwister(69)) ##TODO - Hash out these values
+function DronePOMDP(;size=(10, 10, 2), n_obstacles=15, rng::AbstractRNG=Random.MersenneTwister(69)) ##TODO - Hash out these values
     obstacles = Set{SVector{3, Int}}()
     blocked = falses(size...)
     while length(obstacles) < n_obstacles
@@ -79,7 +79,8 @@ function DronePOMDP(;size=(10, 10, 1), n_obstacles=15, rng::AbstractRNG=Random.M
         blocked[obs...] = true
     end
     drone_init = SVector(rand(rng, 1:size[1]), rand(rng, 1:size[2]), rand(rng, 1:size[3]))
-
+    println("drone: ", drone_init)
+    println("obstacle: ", obstacles)
     obsindices = Array{Union{Nothing,Int}}(nothing, size[1], size[1], size[2], size[2], size[3], size[3]) ##TODO - FIgure out what this does/means (linked to the above TODO) (TB updated 04/13/2024 - I think is correct, but needs to be verified)
     for (ind, o) in enumerate(droneflight_observations(size))
         obsindices[(o.+1)...] = ind
@@ -139,13 +140,13 @@ function POMDPs.transition(m::DronePOMDP, s, a)
     ##TODO - I feel like we might want this to move randomly in the x and y direction always.
     # move randomly
     ##TODO make so target cannot move up and down
-    for change in (SVector(1,0,0), SVector(-1,0,0), SVector(0,-1,0), SVector(0,1,0), SVector(0,0,1), SVector(0,0,-1))
+    for change in (SVector(1,0,0), SVector(-1,0,0), SVector(0,-1,0), SVector(0,1,0))
         newtarget = bounce(m, s.target, change)
         if newtarget == s.target
-            targetprobs[1] += Float64(1/6)
+            targetprobs[1] += Float64(1/4)
         else
             push!(targets, newtarget)
-            push!(targetprobs, Float64(1/6))
+            push!(targetprobs, Float64(1/4))
         end
     end
 
@@ -153,13 +154,13 @@ function POMDPs.transition(m::DronePOMDP, s, a)
     ##TODO make so bystanders cannot move up and down
     bystanders = [s.bystander]
     bystanderprobs = Float64[0.0]
-    for change in (SVector(1,0,0), SVector(-1,0,0), SVector(0,-1,0), SVector(0,1,0), SVector(0,0,1), SVector(0,0,-1))
+    for change in (SVector(1,0,0), SVector(-1,0,0), SVector(0,-1,0), SVector(0,1,0))
         newbystander = bounce(m, s.bystander, change)
         if newbystander == s.bystander
-            bystanderprobs[1] += Float64(1/6)
+            bystanderprobs[1] += Float64(1/4)
         else
             push!(bystanders, newbystander)
-            push!(bystanderprobs, Float64(1/6))
+            push!(bystanderprobs, Float64(1/4))
         end
     end
 
@@ -299,6 +300,7 @@ function POMDPTools.render(m::DronePOMDP, step)
     for x in 1:nx, y in 1:ny
         cell = cell_ctx((x,y), m.size[1:2])
         if SVector(x, y, 1) in m.obstacles
+            println(x," ",y)
             compose!(cell, rectangle(), fill("darkgray"))
         else
             w_op = sqrt(bystander_marginal[x, y])
@@ -328,11 +330,6 @@ function POMDPTools.render(m::DronePOMDP, step)
     if haskey(step, :o) && haskey(step, :sp)
         o = step[:o]
         drone_ctx = cell_ctx(step[:sp].drone, m.size[1:2])
-        # forward = compose(context(), line([(0.0, 0.5),(-o[1],0.5)]))
-        # backward = compose(context(), line([(1.0, 0.5),(1.0+o[2],0.5)]))
-        # left = compose(context(), line([(0.5, 0.0),(0.5, -o[3])]))
-        # right = compose(context(), line([(0.5, 1.0),(0.5, 1.0+o[4])]))
-        # lidar = compose(drone_ctx, strokedash([1mm]), stroke("red"), forward, backward, left, right)
         forward = compose(context(), line([(0.0, 0.5),(1.0+o[1],0.5)]) , stroke("green"))
         backward = compose(context(), line([(1.0, 0.5),(-o[2],0.5)]) , stroke("red"))
         left = compose(context(), line([(0.5, 0.0),(0.5, -o[3])]) , stroke("yellow"))
