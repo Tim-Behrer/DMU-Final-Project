@@ -5,7 +5,7 @@
 module DroneLocalization
 
 ## Load Required Libraries
-using DMUStudent
+# using DMUStudent
 using POMDPs
 using StaticArrays
 using POMDPTools
@@ -14,6 +14,8 @@ using Compose
 using Nettle
 using ProgressMeter
 using JSON
+using GLMakie,Makie
+
 
 
 
