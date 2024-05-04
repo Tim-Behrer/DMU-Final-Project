@@ -78,7 +78,7 @@ function DronePOMDP(;size=(5, 5, 5), n_obstacles=20, rng::AbstractRNG=Random.Mer
         y = rand(rng, 1:size[2])
         for z in 1:rand(rng,1:size[3])
             obs = SVector(x, y, z)
-            println("obstacle: ", obs)
+            #println("obstacle: ", obs)
             push!(obstacles, obs)
             blocked[obs...] = true
         end
@@ -184,7 +184,7 @@ function POMDPs.transition(m::DronePOMDP, s, a)
     return SparseCat(states, probs)
 end
     
-POMDPs.isterminal(m::DronePOMDP, s) = s.target == s.drone
+POMDPs.isterminal(m::DronePOMDP, s) = s.target[1:2] == s.drone[1:2]
 
 ## Define the observation function
 ## The observation capabilities of the drone are:
