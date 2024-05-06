@@ -72,7 +72,7 @@ end
 
 ## Define the Drone POMDP TODO - needs to be fixed once the state is propagated to 3D obstacles 
 ## TODO - think about making tthe obstacles constant
-function DronePOMDP(;size=(10, 10, 5), n_obstacles=20, rng::AbstractRNG=Random.MersenneTwister(420)) ##TODO - Hash out these values
+function DronePOMDP(;size=(5, 5, 5), n_obstacles=1, rng::AbstractRNG=Random.MersenneTwister(420)) ##TODO - Hash out these values
     obstacles = Set{SVector{3, Int}}()
     blocked = falses(size...)
     while length(obstacles) < n_obstacles
