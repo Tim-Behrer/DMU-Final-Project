@@ -11,6 +11,7 @@ using Plots
 using Statistics: mean, std
 using POMCPOW
 using DiscreteValueIteration
+using TernaryPlots
 include("DroneLocalization.jl")
 # include("twoDDroneLocalization.jl")
 import .DroneLocalization: DronePOMDP, DroneState
@@ -110,84 +111,97 @@ QMDP_SOLUTION = solve(QMDP_solver, m)
 # twoDQMDP_SOLUTION = solve(QMDP_solver, m2)
 println("Solved")
 
-qq = 500
-# qq = 1
-qmdp_rolled = [simulate(RolloutSimulator(max_steps=1000), m, QMDP_SOLUTION, up) for _ in 1:qq]
-println("Rolled")
+# qq = 500
+# # qq = 1
+# qmdp_rolled = [simulate(RolloutSimulator(max_steps=1000), m, QMDP_SOLUTION, up) for _ in 1:qq]
+# println("Rolled")
 
-println("Mean:", mean(qmdp_rolled))
-println("STD:", std(qmdp_rolled))
+# println("Mean:", mean(qmdp_rolled))
+# println("STD:", std(qmdp_rolled))
 ############################# Trajectory Saver #############################
 
 
-# Initialize lists to store the trajectory and rewards
-state_trajectory = []
-action_trajectory = []
-reward_trajectory = []
+# # Initialize lists to store the trajectory and rewards
+# state_trajectory = []
+# action_trajectory = []
+# reward_trajectory = []
 
-# Run the simulation
-history = stepthrough(m, QMDP_SOLUTION, up, "s,a,r,sp", max_steps=1000)
+# # Run the simulation
+# history = stepthrough(m, QMDP_SOLUTION, up, "s,a,r,sp", max_steps=1000)
 
-# Record the trajectory and rewards
-for step in history
-    push!(state_trajectory, step.s)
-    push!(action_trajectory, step.a)
-    push!(reward_trajectory, step.r)
-end
+# # Record the trajectory and rewards
+# for step in history
+#     ## Not needed
+#     # push!(state_trajectory, step.s)
+#     # push!(action_trajectory, step.a)
+#     push!(reward_trajectory, step.r)
+# end
 
-println("Simulation completed and trajectory saved")
-# println("State Trajectory: ", state_trajectory)
-# println("Action Trajectory: ", action_trajectory)
-# println("Reward Trajectory: ", reward_trajectory)
+# println("Simulation completed and trajectory saved")
+# # println("State Trajectory: ", state_trajectory)
+# # println("Action Trajectory: ", action_trajectory)
+# # println("Reward Trajectory: ", reward_trajectory)
 
-# ## Plotting the trajectory
-reward_plot = plot(reward_trajectory, xlabel = "Step #", ylabel = "Reward", title = "Reward Trajectory")
-@show(reward_plot)
+# # ## Plotting the trajectory
+# reward_plot = plot(reward_trajectory, xlabel = "Step #", ylabel = "Reward", title = "Reward Trajectory")
+# @show(reward_plot)
 ############################# SARSOP Solver #############################
-sarsop_solver = SARSOPSolver(max_iterations=100, tolerance=1e-6, verbose=false)
-sarsop_solution = solve(sarsop_solver, m)
-println("Solved.")
-sarsop_rolled = [simulate(RolloutSimulator(max_steps=100), m, sarsop_solution, up) for _ in 1:100]
-println("Rolled.")
-println("Mean:", mean(sarsop_rolled))
-println("STD:", std(sarsop_rolled))
+# sarsop_solver = SARSOPSolver(max_iterations=100, tolerance=1e-6, verbose=false)
+# sarsop_solution = solve(sarsop_solver, m)
+# println("Solved.")
+# sarsop_rolled = [simulate(RolloutSimulator(max_steps=100), m, sarsop_solution, up) for _ in 1:100]
+# println("Rolled.")
+# println("Mean:", mean(sarsop_rolled))
+# println("STD:", std(sarsop_rolled))
 ############################# POMCPOW Solution #############################
-println("POMCPOW Solver")
-function pomcpow_solve(m)
-    solver = POMCPOWSolver(tree_queries=200, 
-                            criterion = MaxUCB(30.0), 
-                            default_action=last(actions(m)), 
-                            estimate_value=FORollout(SparseValueIterationSolver(max_iterations = 1500)))
-    return solve(solver, m)
-end
-pomcpow_p = pomcpow_solve(m)
-println("Solved.")
-pomcpow_rolled = [simulate(RolloutSimulator(max_steps=100), m, pomcpow_p, up) for _ in 1:100]
-println("Rolled.")
-println("Mean:", mean(pomcpow_rolled))
-println("STD:", std(pomcpow_rolled))
+# println("POMCPOW Solver")
+# function pomcpow_solve(m)
+#     solver = POMCPOWSolver(tree_queries=200, 
+#                             criterion = MaxUCB(30.0), 
+#                             default_action=last(actions(m)), 
+#                             estimate_value=FORollout(SparseValueIterationSolver(max_iterations = 1500)))
+#     return solve(solver, m)
+# end
+# pomcpow_p = pomcpow_solve(m)
+# println("Solved.")
+# pomcpow_rolled = [simulate(RolloutSimulator(max_steps=100), m, pomcpow_p, up) for _ in 1:100]
+# println("Rolled.")
+# println("Mean:", mean(pomcpow_rolled))
+# println("STD:", std(pomcpow_rolled))
 ############################# Result Plotting #############################
-p2 = plot(QMDP_SOLUTION.alphas,xlabel = "Belief", ylabel = "Value", title = "QMDP Solution Alpha Vectors", label=["α_1" "α_2" "α_3"]) ## TODO Fix this bruddah
+## Trying to get the alpha vectors in 3D
+##Get Alpha Vectors
+qmdp_alphas = QMDP_SOLUTION.alphas
+# sarsop_alphas = sarsop_solution.alphas
+## Normalize
+qmdp_alphas_normalized = qmdp_alphas ./ sum(qmdp_alphas, dims=2)
+# sarsop_alphas_normalized = sarsop_alphas ./ sum(sarsop_alphas, dims=2)
+
+# Create the ternary plot
+ternaryplot()
+ternaryscatter!(qmdp_alphas_normalized, label="QMDP", color=:blue)
+# ternaryscatter!(sarsop_alphas_normalized, label="SARSOP", color=:red)
+# p2 = plot(QMDP_SOLUTION.alphas,xlabel = "Belief", ylabel = "Value", title = "QMDP Solution Alpha Vectors", label=["α_1" "α_2" "α_3"]) ## TODO Fix this bruddah
 
 ##Rollout plots
 # Create three plots
-qmdp_rolled_plot = plot(qmdp_rolled, xlabel = "Rollout Iteration #", ylabel = "Reward", title = "Rollout Trajectory")
-sarsop_rolled_plot = plot(sarsop_rolled, xlabel = "Rollout Iteration #", ylabel = "Reward", title = "Rollout Trajectory")
-pomcpow_rolled_plot = plot(pomcpow_rolled, xlabel = "Rollout Iteration #", ylabel = "Reward", title = "Rollout Trajectory")
+# qmdp_rolled_plot = plot(qmdp_rolled, xlabel = "Rollout Iteration #", ylabel = "Reward", title = "Rollout Trajectory")
+# sarsop_rolled_plot = plot(sarsop_rolled, xlabel = "Rollout Iteration #", ylabel = "Reward", title = "Rollout Trajectory")
+# pomcpow_rolled_plot = plot(pomcpow_rolled, xlabel = "Rollout Iteration #", ylabel = "Reward", title = "Rollout Trajectory")
 
-# Combine these plots into a 1x3 layout
-plot(qmdp_rolled_plot,sarsop_rolled_plot,pomcpow_rolled_plot, layout = (1, 3))
+# # Combine these plots into a 1x3 layout
+# plot(qmdp_rolled_plot,sarsop_rolled_plot,pomcpow_rolled_plot, layout = (1, 3))
 
-# ----------------
+# # ----------------
 # Visualization
 # (all code below is optional)
 #----------------
 
 # You can make a gif showing what's going on like this:
-using POMDPGifs
-import Cairo, Fontconfig # needed to display properly
-## TODO - See what happenes when max_steps is increased
-makegif(m, QMDP_SOLUTION, up, max_steps=50, filename="localization.gif")
+# using POMDPGifs
+# import Cairo, Fontconfig # needed to display properly
+# ## TODO - See what happenes when max_steps is increased
+# makegif(m, QMDP_SOLUTION, up, max_steps=50, filename="localization.gif")
 
 # # You can render a single frame like this
 # using POMDPTools: stepthrough, render

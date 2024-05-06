@@ -72,7 +72,7 @@ end
 
 ## Define the Drone POMDP TODO - needs to be fixed once the state is propagated to 3D obstacles 
 ## TODO - think about making tthe obstacles constant
-function DronePOMDP(;size=(5, 5, 5), n_obstacles=20, rng::AbstractRNG=Random.MersenneTwister(69)) ##TODO - Hash out these values
+function DronePOMDP(;size=(10, 10, 5), n_obstacles=20, rng::AbstractRNG=Random.MersenneTwister(420)) ##TODO - Hash out these values
     obstacles = Set{SVector{3, Int}}()
     blocked = falses(size...)
     while length(obstacles) < n_obstacles
@@ -85,8 +85,12 @@ function DronePOMDP(;size=(5, 5, 5), n_obstacles=20, rng::AbstractRNG=Random.Mer
             blocked[obs...] = true
         end
     end
+
+    # drone_init = SVector(rand(rng, 1:size[1]), rand(rng, 1:size[2]), rand(rng, 1:size[3]))
+    ## Initializing everything to start at ground level
     drone_init = SVector(rand(rng, 1:size[1]), rand(rng, 1:size[2]), rand(rng, 1:size[3]))
     println("drone: ", drone_init)
+
     #println("obstacle: ", obstacles)
     obsindices = Array{Union{Nothing,Int}}(nothing, size[1], size[1], size[2], size[2], size[3], size[3]) ##TODO - FIgure out what this does/means (linked to the above TODO) (TB updated 04/13/2024 - I think is correct, but needs to be verified)
     for (ind, o) in enumerate(droneflight_observations(size))
@@ -115,12 +119,20 @@ const actiondir = Dict(:forward=>SVector(1,0,0), :backward=>SVector(-1,0,0), :le
 const actionind = Dict(:forward=>1, :backward=>2, :left=>3, :right=>4, :up=>5, :down=>6, :measure=>7)
 
 ## Define the behavior function for the drone when it is blocked and not blocked
-function bounce(m::DronePOMDP, pos, change)
+function drone_bounce(m::DronePOMDP, pos, change)
     new = clamp.(pos + change, SVector(1,1,1), m.size)
     if m.blocked[new[1], new[2], new[3]]
         return pos
     else
         return new
+    end
+end 
+function ground_bounce(m::DronePOMDP, pos, change)
+    new = clamp.(pos + change, SVector(1,1,1), m.size)
+    if m.blocked[new[1], new[2], 1]
+        return pos
+    else
+        return SVector(new[1], new[2], 1)
     end
 end 
 
@@ -131,7 +143,7 @@ end
 
 # Define the transition functions
 function POMDPs.transition(m::DronePOMDP, s, a)
-    newdrone = bounce(m, s.drone, actiondir[a])
+    newdrone = drone_bounce(m, s.drone, actiondir[a])
 
     if isterminal(m,s)
         #println(s.drone)
@@ -150,7 +162,7 @@ function POMDPs.transition(m::DronePOMDP, s, a)
     # move randomly
     ##TODO make so target cannot move up and down
     for change in (SVector(1,0,0), SVector(-1,0,0), SVector(0,-1,0), SVector(0,1,0))
-        newtarget = bounce(m, s.target, change)
+        newtarget = ground_bounce(m, s.target, change)
         if newtarget == s.target
             targetprobs[1] += Float64(1/4)
         else
@@ -164,7 +176,7 @@ function POMDPs.transition(m::DronePOMDP, s, a)
     bystanders = [s.bystander]
     bystanderprobs = Float64[0.0]
     for change in (SVector(1,0,0), SVector(-1,0,0), SVector(0,-1,0), SVector(0,1,0))
-        newbystander = bounce(m, s.bystander, change)
+        newbystander = ground_bounce(m, s.bystander, change)
         if newbystander == s.bystander
             bystanderprobs[1] += Float64(1/4)
         else
